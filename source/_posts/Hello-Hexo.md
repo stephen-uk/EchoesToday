@@ -26,6 +26,9 @@ sudo yum install nginx
 ```
 
 安装完成后，ShowDoc的docker的端口为4999，我们可以通过nginx将ShowDoc的域名解析到4999接口，修改nginx.conf，nginx配置如下
+
+<!--more-->
+
 ```
     server {
         listen       80;
