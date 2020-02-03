@@ -1,13 +1,10 @@
 ---
-title: App启动以及生命周期管理（一）
+title: 了解Mach-O文件
 date: 2020-01-9 11:13:21
 tags:
 ---
 
-> **App launch is a user experience interruption.**
-> *想总结一下iOS App启动过程以及生命周期管理，第一遍整理*
-
-在Windows下我们的可执行文件一般是.exe文件，iOS以及macOS系统中是我们常说的Mach-O文件，常见的文件有我们的可执行文件，动态库，以及动态链接库等。所以先简单了解一下可执行文件。
+在Windows下我们的可执行文件一般是.exe文件，iOS以及macOS系统中是我们常说的Mach-O文件，常见的文件有我们的可执行文件，动态库，以及动态链接库等。
 
 ## 了解Mach-O
 Mach-O,是Mach Object的文件格式的缩写，是一种用于记录可执行文件，对象代码，共享库，动态加载代码和内存转储的文件格式，是macOS/iOS上程序以及库的标准格式。 Mach-O文件可以通过MachOView打开查看。
@@ -128,79 +125,3 @@ flags是section的一些标志属性。
 
 #### Mach-O Data
 Mach-O中Load Commands之后的就是Data数据。每个段的数据都保存在这里，这里存放了具体的数据与代码。由于Mach-O Data中的内容更多的与具体的数据有关，而与格式无关。
-
-
-## App启动类型
- App启动过程有冷启动，温启动，恢复。 具体什么情况下是那种启动方式可以看下面摘自WWDC表格。
-
-Cold | Warm |  Resume  
--|-|-
-After reboot | Recently terminated | App is suspended |
-App is not in memory | App is partially in memory | App is fully in memory |
-No process exists | No process exists | Process exists |
-
-## App 启动过程
-
-**System Interface -> Runtime -> UIKit Init -> Init Application -> Init Initial Frame Render -> Extended**
-
-### System Interface
-该阶段是系统准备阶段，主要有读取Mach-O文件，加载动态连接器并连接动态库以及重新绑定符号表。
-1. ReadyToLoad Mach-o 系统准备读取Mach-O文件
-2. Read Mach-o Header 读取Mach-O文件头部
-3. Kernel Load Dyld  加载动态连接器
-4. Dyld Load  dylibs  动态链接动态库
-5. Rebase/Bind rebase修复指向当前镜像内部的资源指针；bind修复镜像外部的资源指针
-
-> [iOS 13中dyld 3的改进和优化](https://easeapi.com/blog/blog/83-ios13-dyld3.html)
-
-### Runtime
-初始化Objc运行环境。[Objc4 源码](https://github.com/opensource-apple/objc4)
-主要过程为初始化 所有类对象以及元类对象，加载分类并合并方法列表，以及调用+load方法。
-至此app已经有了最基本的运行环境。
-
-### UIKit Init
-系统调用程序中的Main方法，Main方法中创建 `UIApplication`,并设置`UIApplicationDelegate`
-
-### Init Application
-该过程主要就是我们在appdelegate中的代理方法。
-
-![AppDelegate](app_delegate.png)
-
-主要调用顺序为
-``` c
-- application:willFinishLaunchingWithOptions: 
-Tells the delegate that the launch process has begun but that state restoration has not yet occurred.
-
-- application:didFinishLaunchingWithOptions:
-Tells the delegate that the launch process is almost done and the app is almost ready to run.
-
-- applicationWillEnterForeground:
-Tells the delegate that the app is about to enter the foreground.
-
-- applicationDidBecomeActive:
-Tells the delegate that the app has become active.
-
-- applicationWillResignActive:
-Tells the delegate that the app is about to become inactive.
-
-- applicationDidEnterBackground:
-Tells the delegate that the app is now in the background.
-
-- applicationWillTerminate:
-Tells the delegate when the app is about to terminate.
-
-```
-
-> iOS 13中 SenceDelegate 适配可以看这个 [iOS13 UISenceSession](../../../../2020/01/01/iOS13-UISceneSession/)
-
-### Init Initial Frame Render 
-Creates, performs layout for, and draws views.
-调用第一个viewContoller的loadView，以及viewDidLoad跟layoutSubviews等方法。
-
-### Extended
-- App-specific period after first frame.
-- Displays asynchronously loaded data.
-- App should be interactive and responsive.
-
-
-
